@@ -1,3 +1,27 @@
+//
+//  AlbumArtOnSwitcher
+//  
+//  
+//  Copyright (c) 2011 deVbug
+//  
+//  Permission is hereby granted, free of charge, to any person obtaining a copy
+//  of this software and associated documentation files (the "Software"), to deal
+//  in the Software without restriction, including without limitation the rights
+//  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+//  copies of the Software, and to permit persons to whom the Software is
+//  furnished to do so, subject to the following conditions:
+//  
+//  The above copyright notice and this permission notice shall be included in
+//  all copies or substantial portions of the Software.
+//  
+//  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+//  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+//  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+//  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+//  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+//  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+//  THE SOFTWARE.
+//
 
 #import <UIKit/UIKit.h>
 #import <Foundation/Foundation.h>
@@ -5,24 +29,20 @@
 
 
 
+#define MOBILEIPOD_ID							@"com.apple.mobileipod"
+#define DEFAULT_AA_SIZE							60
+
+
 static UIImage *iPodArtwork = nil;
 static UIImage *nowPlayingArtwork = nil;
 static UIImageView *nowPlayingView = nil;
 
 
-@interface SBIcon : NSObject
-@end
-
 @interface SBApplication : NSObject
 - (NSString *)displayIdentifier;
 @end
 
-@interface SBApplicationIcon : SBIcon
-- (SBApplication *)application;
-@end
-
 @interface SBIconView : UIView
-- (SBIcon *)icon;
 @end
 
 @interface SBNowPlayingBarView : UIView
@@ -33,7 +53,7 @@ static UIImageView *nowPlayingView = nil;
 + (id)sharedInstance;
 - (BOOL)isPlaying;
 - (NSDictionary *)_nowPlayingInfo;
-- (id)nowPlayingApplication;
+- (SBApplication *)nowPlayingApplication;
 @end
 
 
@@ -73,7 +93,7 @@ static UIImageView *nowPlayingView = nil;
 	
 	MPMediaItemArtwork *coverArt = [nowPlayingItem valueForProperty:MPMediaItemPropertyArtwork];
 	if (coverArt)
-		iPodArtwork = [[coverArt imageWithSize:CGSizeMake(60,60)] copy];
+		iPodArtwork = [[coverArt imageWithSize:CGSizeMake(DEFAULT_AA_SIZE,DEFAULT_AA_SIZE)] copy];
 		
 	[self setNeedsLayout];
 	
@@ -90,7 +110,7 @@ static UIImageView *nowPlayingView = nil;
 	SBMediaController *mediaController = [objc_getClass("SBMediaController") sharedInstance];
 	
 	if ([mediaController isPlaying]) {
-		if ([[(SBApplication *)[mediaController nowPlayingApplication] displayIdentifier] isEqualToString:@"com.apple.mobileipod"]) {
+		if ([[[mediaController nowPlayingApplication] displayIdentifier] isEqualToString:MOBILEIPOD_ID]) {
 			[pool release];
 			return;
 		}
@@ -143,7 +163,7 @@ static UIImageView *nowPlayingView = nil;
 - (id)initWithFrame:(struct CGRect)frame {
 	id rtn = %orig;
 	
-	nowPlayingView = [[UIImageView alloc] initWithFrame:CGRectMake(-1,-2,60,60)];
+	nowPlayingView = [[UIImageView alloc] initWithFrame:CGRectMake(-1,-2,DEFAULT_AA_SIZE,DEFAULT_AA_SIZE)];
 	nowPlayingView.contentMode = UIViewContentModeScaleAspectFit;
 	nowPlayingView.backgroundColor = [UIColor blackColor];
 	
