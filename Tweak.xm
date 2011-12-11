@@ -11,7 +11,6 @@ static UIImageView *nowPlayingView = nil;
 
 
 @interface SBIcon : NSObject
-- (NSString *)displayName;
 @end
 
 @interface SBApplication : NSObject
@@ -24,16 +23,9 @@ static UIImageView *nowPlayingView = nil;
 
 @interface SBIconView : UIView
 - (SBIcon *)icon;
-- (int)location;
-- (UIImageView *)iconImageView;
-- (void)setDisplayedIconImage:(id)fp8;
 @end
 
 @interface SBNowPlayingBarView : UIView
-- (void)layoutSubviews;
-- (void)_layoutForiPhone;
-- (void)_layoutForiPad;
-- (void)setNowPlayingIconView:(id)fp8;
 - (SBIconView *)nowPlayingIconView;
 @end
 
@@ -41,9 +33,6 @@ static UIImageView *nowPlayingView = nil;
 + (id)sharedInstance;
 - (BOOL)isPlaying;
 - (NSDictionary *)_nowPlayingInfo;
-- (id)nowPlayingArtist;
-- (id)nowPlayingTitle;
-- (id)nowPlayingAlbum;
 - (id)nowPlayingApplication;
 @end
 
@@ -66,8 +55,6 @@ static UIImageView *nowPlayingView = nil;
 
 %new(v@:)
 - (void)aaosSetiPodNowPlaying {
-	//NSLog(@"[AAOS] aaosSetiPodNowPlaying");
-	
 	NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
 	
 	[iPodArtwork release];
@@ -75,13 +62,11 @@ static UIImageView *nowPlayingView = nil;
 	
 	MPMusicPlayerController *iPodController = [MPMusicPlayerController iPodMusicPlayer];
 	if (iPodController == nil) {
-		//NSLog(@"[AAOS] iPodController is nil");
 		[pool release];
 		return;
 	}
 	MPMediaItem *nowPlayingItem = [iPodController nowPlayingItem];
 	if (nowPlayingItem == nil) {
-		//NSLog(@"[AAOS] nowPlayingItem is nil");
 		[pool release];
 		return;
 	}
@@ -97,8 +82,6 @@ static UIImageView *nowPlayingView = nil;
 
 %new(v@:)
 - (void)aaosSetGlobalNowPlaying {
-	//NSLog(@"[AAOS] aaosSetiPodNowPlaying");
-	
 	NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
 	
 	[nowPlayingArtwork release];
@@ -125,8 +108,6 @@ static UIImageView *nowPlayingView = nil;
 
 %new(v@:)
 - (void)aaosUnsetNowPlaying {
-	//NSLog(@"[AAOS] aaosUnsetNowPlaying");
-	
 	[iPodArtwork release];
 	iPodArtwork = nil;
 	
@@ -138,9 +119,6 @@ static UIImageView *nowPlayingView = nil;
 
 %new(v@:@@)
 - (void)aaosiPodNowPlayingItemChanged:(NSNotification *)notification {
-	//NSString *persistentID = [[notification userInfo] objectForKey:@"MPMusicPlayerControllerNowPlayingItemPersistentIDKey"];
-	//NSLog(@"[AAOS] iPod PlayingItemChanged :: %@", persistentID);
-	
 	[self performSelector:@selector(aaosSetiPodNowPlaying)];
 }
 	
@@ -149,43 +127,23 @@ static UIImageView *nowPlayingView = nil;
 	NSInteger playbackState = [[[notification userInfo] objectForKey:@"MPMusicPlayerControllerPlaybackStateKey"] intValue];
 	
 	if (playbackState == MPMusicPlaybackStatePlaying) {
-		//NSLog(@"[AAOS] iPod PlaybackStateChanged to playing");
-		
 		[self performSelector:@selector(aaosSetiPodNowPlaying)];
 	} else if (playbackState == MPMusicPlaybackStateStopped || 
 			   playbackState == MPMusicPlaybackStateInterrupted || 
 			   playbackState == MPMusicPlaybackStatePaused) {
-		//NSLog(@"[AAOS] iPod PlaybackStateChanged to stop");
-		
 		[self performSelector:@selector(aaosUnsetNowPlaying)];
 	}
 }
 
 %new(v@:@@)
 - (void)aaosGlobalNowPlayingItemChanged:(NSNotification *)notification {
-	//NSLog(@"[AAOS] global PlayingItemChanged");
-	
 	[self performSelector:@selector(aaosSetGlobalNowPlaying)];
 }
-
-/*%new(v@:@@)
-- (void)aaosGlobalPlaybackStateChanged:(NSNotification *)notification {
-	//NSLog(@"[AAOS] aaosGlobalPlaybackStateChanged %@", notification);
 	
-	NSInteger playbackState = [[[notification userInfo] objectForKey:@"kMRMediaRemoteNowPlayingApplicationIsPlayingUserInfoKey"] intValue];
-	
-	if (playbackState == 1) {
-		//
-	} else { // playbackState == 0
-		[self performSelector:@selector(aaosUnsetNowPlaying)];
-	}
-}*/
-	
-- (id)initWithFrame:(struct CGRect)fp8 {
+- (id)initWithFrame:(struct CGRect)frame {
 	id rtn = %orig;
 	
-	nowPlayingView = [[UIImageView alloc] init];
-	nowPlayingView.frame = CGRectMake(-1,-2,60,60);
+	nowPlayingView = [[UIImageView alloc] initWithFrame:CGRectMake(-1,-2,60,60)];
 	nowPlayingView.contentMode = UIViewContentModeScaleAspectFit;
 	nowPlayingView.backgroundColor = [UIColor blackColor];
 	
@@ -199,11 +157,6 @@ static UIImageView *nowPlayingView = nil;
 											   object:nil];
 	[[MPMusicPlayerController iPodMusicPlayer] beginGeneratingPlaybackNotifications];
 	
-	/*[[NSNotificationCenter defaultCenter] addObserver:self 
-											 selector:@selector(aaosGlobalPlaybackStateChanged:) 
-												 name:@"kMRMediaRemoteNowPlayingApplicationIsPlayingDidChangeNotification" 
-											   object:nil];*/
-	// kMRMediaRemoteNowPlayingInfoDidChangeNotification
 	[[NSNotificationCenter defaultCenter] addObserver:self 
 											 selector:@selector(aaosGlobalNowPlayingItemChanged:) 
 												 name:@"SBMediaNowPlayingChangedNotification" 
