@@ -26,11 +26,16 @@
 #import <UIKit/UIKit.h>
 #import <Foundation/Foundation.h>
 #import <MediaPlayer/MediaPlayer.h>
+#import <CoreGraphics/CoreGraphics.h>
 
 
 
 #define MOBILEIPOD_ID							@"com.apple.mobileipod"
 #define DEFAULT_AA_SIZE							60
+
+
+
+extern "C" CGImageRef LICreateIconForImage(CGImageRef image, int variant, int precomposed);
 
 
 static UIImage *iPodArtwork = nil;
@@ -65,10 +70,18 @@ static UIImageView *nowPlayingView = nil;
 	%orig;
 	
 	if (nowPlayingArtwork) {
-		[nowPlayingView setImage:nowPlayingArtwork];
+		CGImageRef image = LICreateIconForImage(nowPlayingArtwork.CGImage, 15, 0);
+		UIImage *temp = [[UIImage alloc] initWithCGImage:image];
+		[nowPlayingView setImage:temp];
+		[temp release];
+		CGImageRelease(image);
 		[[self nowPlayingIconView] addSubview:nowPlayingView];
 	} else if (iPodArtwork) {
-		[nowPlayingView setImage:iPodArtwork];
+		CGImageRef image = LICreateIconForImage(iPodArtwork.CGImage, 15, 0);
+		UIImage *temp = [[UIImage alloc] initWithCGImage:image];
+		[nowPlayingView setImage:temp];
+		[temp release];
+		CGImageRelease(image);
 		[[self nowPlayingIconView] addSubview:nowPlayingView];
 	}
 }
@@ -94,7 +107,7 @@ static UIImageView *nowPlayingView = nil;
 	MPMediaItemArtwork *coverArt = [nowPlayingItem valueForProperty:MPMediaItemPropertyArtwork];
 	if (coverArt)
 		iPodArtwork = [[coverArt imageWithSize:CGSizeMake(DEFAULT_AA_SIZE,DEFAULT_AA_SIZE)] copy];
-		
+	
 	[self setNeedsLayout];
 	
 	[pool release];
@@ -141,7 +154,7 @@ static UIImageView *nowPlayingView = nil;
 - (void)aaosiPodNowPlayingItemChanged:(NSNotification *)notification {
 	[self performSelector:@selector(aaosSetiPodNowPlaying)];
 }
-	
+
 %new(v@:@@)
 - (void)aaosiPodPlaybackStateChanged:(NSNotification *)notification {
 	NSInteger playbackState = [[[notification userInfo] objectForKey:@"MPMusicPlayerControllerPlaybackStateKey"] intValue];
@@ -159,13 +172,13 @@ static UIImageView *nowPlayingView = nil;
 - (void)aaosGlobalNowPlayingItemChanged:(NSNotification *)notification {
 	[self performSelector:@selector(aaosSetGlobalNowPlaying)];
 }
-	
+
 - (id)initWithFrame:(struct CGRect)frame {
 	id rtn = %orig;
 	
-	nowPlayingView = [[UIImageView alloc] initWithFrame:CGRectMake(-1,-2,DEFAULT_AA_SIZE,DEFAULT_AA_SIZE)];
-	nowPlayingView.contentMode = UIViewContentModeScaleAspectFit;
-	nowPlayingView.backgroundColor = [UIColor blackColor];
+	nowPlayingView = [[UIImageView alloc] initWithFrame:CGRectMake(0,-2,DEFAULT_AA_SIZE-1,DEFAULT_AA_SIZE+2)];
+	//nowPlayingView.contentMode = UIViewContentModeScaleAspectFit;
+	//nowPlayingView.backgroundColor = [UIColor blackColor];
 	
 	[[NSNotificationCenter defaultCenter] addObserver:self 
 											 selector:@selector(aaosiPodPlaybackStateChanged:) 
@@ -181,6 +194,9 @@ static UIImageView *nowPlayingView = nil;
 											 selector:@selector(aaosGlobalNowPlayingItemChanged:) 
 												 name:@"SBMediaNowPlayingChangedNotification" 
 											   object:nil];
+	
+	[self performSelector:@selector(aaosSetiPodNowPlaying)];
+	[self performSelector:@selector(aaosSetGlobalNowPlaying)];
 	
 	return rtn;
 }
