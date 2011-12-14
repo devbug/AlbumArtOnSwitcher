@@ -1,10 +1,11 @@
 Package: me.devbug.albumartonswitcher
 Name: AlbumArt On AppSwitcher
 Depends: mobilesubstrate, firmware (>= 5.0)
+Conflicts: me.devbug.multimusicinfov, org.thebigboss.jcorbett.multimusiciinfo
+Replaces: me.devbug.multimusicinfov, org.thebigboss.jcorbett.multimusicinfo
 Version: 0.0.1
 Architecture: iphoneos-arm
 Description: Show albumart on app switcher
 Maintainer: deVbug <devbug@devbug.me>
 Author: deVbug <devbug@devbug.me>
 Section: Tweaks
-Homepage: https://github.com/devbug/AlbumArtOnSwitcher

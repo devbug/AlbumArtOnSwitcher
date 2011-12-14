@@ -28,10 +28,27 @@
 #import <MediaPlayer/MediaPlayer.h>
 #import <CoreGraphics/CoreGraphics.h>
 
+#include <sys/types.h>
+#include <sys/sysctl.h>
+
 
 
 #define MOBILEIPOD_ID							@"com.apple.mobileipod"
-#define DEFAULT_AA_SIZE							60
+#define DEFAULT_AA_SIZE							((this_device & DeviceTypeiPad) != 0 ? 76 : 60)
+#define DEFAULT_AA_VARIANT						((this_device & DeviceTypeiPhone4) != 0 ? 15 : ((this_device & DeviceTypeiPad) != 0 ? 1 : 0))
+
+
+typedef NSUInteger DeviceType;
+enum {
+	DeviceTypeUnsupported		= 0,					// 00000000(2)
+	DeviceTypeiPodTouch3G		= 1,					// 00000001(2)
+	DeviceTypeiPhone3Gs			= (1 << 1) + 1,			// 00000011(2)
+	DeviceTypeiPodTouch4G		= (1 << 2),				// 00000100(2)
+	DeviceTypeiPhone4			= (1 << 3) + (1 << 2),	// 00001100(2)
+	DeviceTypeiPad				= (1 << 4)				// 00010000(2)
+};
+
+static DeviceType this_device = DeviceTypeiPhone4;
 
 
 
@@ -50,16 +67,41 @@ static UIImageView *nowPlayingView = nil;
 @interface SBIconView : UIView
 @end
 
-@interface SBNowPlayingBarView : UIView
-- (SBIconView *)nowPlayingIconView;
-@end
-
 @interface SBMediaController : NSObject
 + (id)sharedInstance;
 - (BOOL)isPlaying;
 - (NSDictionary *)_nowPlayingInfo;
 - (SBApplication *)nowPlayingApplication;
 @end
+
+@interface SBNowPlayingBarMediaControlsView : UIView {
+	BOOL _isPlaying;
+}
+@end
+
+@interface SBNowPlayingBarView : UIView
+- (SBIconView *)nowPlayingIconView;
+@end
+
+
+
+%hook SBNowPlayingBarMediaControlsView
+
+- (void)setTrackString:(NSString *)_title {
+	BOOL isPlaying = MSHookIvar<BOOL>(self, "_isPlaying");
+	
+	if (_title.length == 0 && isPlaying == NO) {
+		[iPodArtwork release];
+		iPodArtwork = nil;
+		
+		[nowPlayingArtwork release];
+		nowPlayingArtwork = nil;
+	}
+	
+	%orig;
+}
+
+%end
 
 
 %hook SBNowPlayingBarView
@@ -69,19 +111,19 @@ static UIImageView *nowPlayingView = nil;
 	
 	%orig;
 	
+	CGImageRef image = NULL;
 	if (nowPlayingArtwork) {
-		CGImageRef image = LICreateIconForImage(nowPlayingArtwork.CGImage, 15, 0);
-		UIImage *temp = [[UIImage alloc] initWithCGImage:image];
-		[nowPlayingView setImage:temp];
-		[temp release];
-		CGImageRelease(image);
-		[[self nowPlayingIconView] addSubview:nowPlayingView];
+		image = LICreateIconForImage(nowPlayingArtwork.CGImage, DEFAULT_AA_VARIANT, 0);
 	} else if (iPodArtwork) {
-		CGImageRef image = LICreateIconForImage(iPodArtwork.CGImage, 15, 0);
+		image = LICreateIconForImage(iPodArtwork.CGImage, DEFAULT_AA_VARIANT, 0);
+	}
+	
+	if (image != NULL) {
 		UIImage *temp = [[UIImage alloc] initWithCGImage:image];
 		[nowPlayingView setImage:temp];
 		[temp release];
 		CGImageRelease(image);
+		image = NULL;
 		[[self nowPlayingIconView] addSubview:nowPlayingView];
 	}
 }
@@ -89,9 +131,6 @@ static UIImageView *nowPlayingView = nil;
 %new(v@:)
 - (void)aaosSetiPodNowPlaying {
 	NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
-	
-	[iPodArtwork release];
-	iPodArtwork = nil;
 	
 	MPMusicPlayerController *iPodController = [MPMusicPlayerController iPodMusicPlayer];
 	if (iPodController == nil) {
@@ -117,16 +156,19 @@ static UIImageView *nowPlayingView = nil;
 - (void)aaosSetGlobalNowPlaying {
 	NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
 	
-	[nowPlayingArtwork release];
-	nowPlayingArtwork = nil;
-	
 	SBMediaController *mediaController = [objc_getClass("SBMediaController") sharedInstance];
 	
 	if ([mediaController isPlaying]) {
 		if ([[[mediaController nowPlayingApplication] displayIdentifier] isEqualToString:MOBILEIPOD_ID]) {
+			[nowPlayingArtwork release];
+			nowPlayingArtwork = nil;
+			
 			[pool release];
 			return;
 		}
+		
+		[iPodArtwork release];
+		iPodArtwork = nil;
 		
 		NSData *tempData = [[mediaController _nowPlayingInfo] objectForKey:@"artworkData"];
 		
@@ -137,17 +179,6 @@ static UIImageView *nowPlayingView = nil;
 	[self setNeedsLayout];
 	
 	[pool release];
-}
-
-%new(v@:)
-- (void)aaosUnsetNowPlaying {
-	[iPodArtwork release];
-	iPodArtwork = nil;
-	
-	[nowPlayingArtwork release];
-	nowPlayingArtwork = nil;
-	
-	[self setNeedsLayout];
 }
 
 %new(v@:@@)
@@ -161,10 +192,6 @@ static UIImageView *nowPlayingView = nil;
 	
 	if (playbackState == MPMusicPlaybackStatePlaying) {
 		[self performSelector:@selector(aaosSetiPodNowPlaying)];
-	} else if (playbackState == MPMusicPlaybackStateStopped || 
-			   playbackState == MPMusicPlaybackStateInterrupted || 
-			   playbackState == MPMusicPlaybackStatePaused) {
-		[self performSelector:@selector(aaosUnsetNowPlaying)];
 	}
 }
 
@@ -207,6 +234,30 @@ static UIImageView *nowPlayingView = nil;
 
 %ctor
 {
+	size_t size;
+	sysctlbyname("hw.machine", NULL, &size, NULL, 0);
+	char *name = (char *)malloc(size);
+	sysctlbyname("hw.machine", name, &size, NULL, 0);
+	
+	if (strstr(name, "iPhone2"))
+		this_device = DeviceTypeiPhone3Gs;
+	else if (strstr(name, "iPod3"))
+		this_device = DeviceTypeiPodTouch3G;
+	else if (strstr(name, "iPad"))
+		this_device = DeviceTypeiPad;
+	else if (strstr(name, "iPhone1"))
+		this_device = DeviceTypeUnsupported;
+	else if (strstr(name, "iPod1") || strstr(name, "iPod2"))
+		this_device = DeviceTypeUnsupported;
+	else if (strstr(name, "iPod"))			// above iPodTouch 4G
+		this_device = DeviceTypeiPodTouch4G;
+	else if (strstr(name, "iPhone"))		// above iPhone 4
+		this_device = DeviceTypeiPhone4;
+	else
+		this_device = DeviceTypeUnsupported;
+	
+	free(name);
+	
 	NSString *identifier = [[NSBundle mainBundle] bundleIdentifier];
 	
 	if (![identifier isEqualToString:@"com.apple.springboard"]) return;
