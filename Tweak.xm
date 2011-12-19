@@ -35,17 +35,22 @@
 
 #define MOBILEIPOD_ID							@"com.apple.mobileipod"
 #define DEFAULT_AA_SIZE							((this_device & DeviceTypeiPad) != 0 ? 76 : 60)
-#define DEFAULT_AA_VARIANT						((this_device & DeviceTypeiPhone4) != 0 ? 15 : ((this_device & DeviceTypeiPad) != 0 ? 1 : 0))
+#define DEFAULT_AA_VARIANT						((this_device & DeviceTypeRetina) != 0 ? 15 : ((this_device & DeviceTypeiPad) != 0 ? 1 : 0))
 
 
 typedef NSUInteger DeviceType;
 enum {
 	DeviceTypeUnsupported		= 0,					// 00000000(2)
-	DeviceTypeiPodTouch3G		= 1,					// 00000001(2)
-	DeviceTypeiPhone3Gs			= (1 << 1) + 1,			// 00000011(2)
-	DeviceTypeiPodTouch4G		= (1 << 2),				// 00000100(2)
-	DeviceTypeiPhone4			= (1 << 3) + (1 << 2),	// 00001100(2)
-	DeviceTypeiPad				= (1 << 4)				// 00010000(2)
+	DeviceTypeiPodTouch3G		= 1 << 0,				// 00000001(2)
+	DeviceTypeiPhone3Gs			= 1 << 1,				// 00000010(2)
+	DeviceTypeiPodTouch4G		= 1 << 2,				// 00000100(2)
+	DeviceTypeiPhone4			= 1 << 3,				// 00001000(2)
+	DeviceTypeiPad				= 1 << 4,				// 00010000(2)
+	
+	DeviceTypeUnknown			= 0,					// 00000000(2)
+	DeviceTypeNoRetina			= 3 << 1,				// 00000011(2)
+	DeviceTypeRetina			= 3 << 2,				// 00001100(2)
+	//DeviceTypeNormaliPad		= 3 << 4				// 00110000(2)
 };
 
 static DeviceType this_device = DeviceTypeiPhone4;
@@ -65,6 +70,7 @@ static UIImageView *nowPlayingView = nil;
 @end
 
 @interface SBIconView : UIView
+- (UIImageView *)iconImageView;
 @end
 
 @interface SBMediaController : NSObject
@@ -124,7 +130,7 @@ static UIImageView *nowPlayingView = nil;
 		[temp release];
 		CGImageRelease(image);
 		image = NULL;
-		[[self nowPlayingIconView] addSubview:nowPlayingView];
+		[[self nowPlayingIconView] insertSubview:nowPlayingView aboveSubview:[[self nowPlayingIconView] iconImageView]];
 	}
 }
 
@@ -144,8 +150,11 @@ static UIImageView *nowPlayingView = nil;
 	}
 	
 	MPMediaItemArtwork *coverArt = [nowPlayingItem valueForProperty:MPMediaItemPropertyArtwork];
-	if (coverArt)
+	if (coverArt) {
+		[iPodArtwork release];
+		iPodArtwork = nil;
 		iPodArtwork = [[coverArt imageWithSize:CGSizeMake(DEFAULT_AA_SIZE,DEFAULT_AA_SIZE)] copy];
+	}
 	
 	[self setNeedsLayout];
 	
@@ -172,8 +181,11 @@ static UIImageView *nowPlayingView = nil;
 		
 		NSData *tempData = [[mediaController _nowPlayingInfo] objectForKey:@"artworkData"];
 		
-		if (tempData)
+		if (tempData) {
+			[nowPlayingArtwork release];
+			nowPlayingArtwork = nil;
 			nowPlayingArtwork = [[UIImage alloc] initWithData:tempData];
+		}
 	}
 	
 	[self setNeedsLayout];
