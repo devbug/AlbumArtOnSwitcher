@@ -69,7 +69,12 @@ static UIImageView *nowPlayingView = nil;
 - (NSString *)displayIdentifier;
 @end
 
-@interface SBIconView : UIView
+@interface SBIconImageContainerView : UIView
+@end
+
+@interface SBIconView : UIView {
+	SBIconImageContainerView *_iconImageContainer;
+}
 - (UIImageView *)iconImageView;
 @end
 
@@ -130,7 +135,8 @@ static UIImageView *nowPlayingView = nil;
 		[temp release];
 		CGImageRelease(image);
 		image = NULL;
-		[[self nowPlayingIconView] insertSubview:nowPlayingView aboveSubview:[[self nowPlayingIconView] iconImageView]];
+		SBIconImageContainerView *containerView = MSHookIvar<SBIconImageContainerView *>(self.nowPlayingIconView, "_iconImageContainer");
+		[containerView insertSubview:nowPlayingView aboveSubview:[[self nowPlayingIconView] iconImageView]];
 	}
 }
 
