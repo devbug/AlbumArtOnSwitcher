@@ -2,7 +2,7 @@
 //  AlbumArtOnSwitcher
 //  
 //  
-//  Copyright (c) 2011 deVbug
+//  Copyright (c) 2011-2012 deVbug
 //  
 //  Permission is hereby granted, free of charge, to any person obtaining a copy
 //  of this software and associated documentation files (the "Software"), to deal
@@ -33,7 +33,7 @@
 
 
 
-#define MOBILEIPOD_ID							@"com.apple.mobileipod"
+#define MOBILEIPOD_ID							((this_device & DeviceTypeiPad) != 0 ? @"com.apple.Music" : @"com.apple.mobileipod")
 #define DEFAULT_AA_SIZE							((this_device & DeviceTypeiPad) != 0 ? 76 : 60)
 #define DEFAULT_AA_VARIANT						((this_device & DeviceTypeRetina) != 0 ? 15 : ((this_device & DeviceTypeiPad) != 0 ? 1 : 0))
 
