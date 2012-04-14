@@ -41,16 +41,19 @@
 typedef NSUInteger DeviceType;
 enum {
 	DeviceTypeUnsupported		= 0,					// 00000000(2)
-	DeviceTypeiPodTouch3G		= 1 << 0,				// 00000001(2)
+											// no retina
+	DeviceTypeiPodTouch3g		= 1 << 0,				// 00000001(2)
 	DeviceTypeiPhone3Gs			= 1 << 1,				// 00000010(2)
-	DeviceTypeiPodTouch4G		= 1 << 2,				// 00000100(2)
-	DeviceTypeiPhone4			= 1 << 3,				// 00001000(2)
-	DeviceTypeiPad				= 1 << 4,				// 00010000(2)
+	DeviceTypeiPad				= 1 << 2,				// 00000100(2)
+											// retina
+	DeviceTypeiPodTouch4g		= 1 << 3,				// 00001000(2)
+	DeviceTypeiPhone4			= 1 << 4,				// 00010000(2)
+	DeviceTypeiPad3g			= 1 << 5,				// 00100000(2)
 	
+											// 
 	DeviceTypeUnknown			= 0,					// 00000000(2)
-	DeviceTypeNoRetina			= 3 << 1,				// 00000011(2)
-	DeviceTypeRetina			= 3 << 2,				// 00001100(2)
-	//DeviceTypeNormaliPad		= 3 << 4				// 00110000(2)
+	DeviceTypeNoRetina			= 7 << 0,				// 00000111(2)
+	DeviceTypeRetina			= 7 << 1,				// 00111000(2)
 };
 
 static DeviceType this_device = DeviceTypeiPhone4;
@@ -260,17 +263,19 @@ static UIImageView *nowPlayingView = nil;
 	if (strstr(name, "iPhone2"))
 		this_device = DeviceTypeiPhone3Gs;
 	else if (strstr(name, "iPod3"))
-		this_device = DeviceTypeiPodTouch3G;
-	else if (strstr(name, "iPad"))
+		this_device = DeviceTypeiPodTouch3g;
+	else if (strstr(name, "iPad1") || strstr(name, "iPad2"))
 		this_device = DeviceTypeiPad;
 	else if (strstr(name, "iPhone1"))
 		this_device = DeviceTypeUnsupported;
 	else if (strstr(name, "iPod1") || strstr(name, "iPod2"))
 		this_device = DeviceTypeUnsupported;
-	else if (strstr(name, "iPod"))			// above iPodTouch 4G
-		this_device = DeviceTypeiPodTouch4G;
+	else if (strstr(name, "iPod"))			// above iPodTouch 4g
+		this_device = DeviceTypeiPodTouch4g;
 	else if (strstr(name, "iPhone"))		// above iPhone 4
 		this_device = DeviceTypeiPhone4;
+	else if (strstr(name, "iPad"))
+		this_device = DeviceTypeiPad3g;
 	else
 		this_device = DeviceTypeUnsupported;
 	
