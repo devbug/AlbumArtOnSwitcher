@@ -53,7 +53,7 @@ enum {
 											// 
 	DeviceTypeUnknown			= 0,					// 00000000(2)
 	DeviceTypeNoRetina			= 7 << 0,				// 00000111(2)
-	DeviceTypeRetina			= 7 << 1,				// 00111000(2)
+	DeviceTypeRetina			= 7 << 3,				// 00111000(2)
 };
 
 static DeviceType this_device = DeviceTypeiPhone4;
